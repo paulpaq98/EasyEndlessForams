@@ -1,8 +1,8 @@
 # Endless Forams - Pytorch Implementation
 
-📚 [Paper](https://hal.science/hal-02975093v1) | 🌐 [Website](http://endlessforams.org) | ✏️ [Simple Training Loop](https://github.com/paulpaq98/EEF/blob/main/train_model_classification.py)
+📚 [Paper](https://hal.science/hal-02975093v1) | 🌐 [Website](http://endlessforams.org) | ✏️ [Simple Training Loop](https://https://github.com/paulpaq98/EasyEndlessForams/blob/main/train_model_classification.py)
 
-<img src="assets/palo20770-fig-0006-m.png" alt="Forams Exemples" width="100%" />
+<img src="assets/palo20770-fig-0006-m.jpg" alt="Forams Exemples" width="100%" />
 
 
 This repository contains a pytorch implementation for a training loop based on the images from the endless forams dataset as described in:
