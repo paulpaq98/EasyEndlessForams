@@ -1,0 +1,11 @@
+*/**/__pycache__
+*/__pycache__
+data/img/*
+data/masks/*
+
+# Models
+models/classification/*.pth
+models/detection/*.pth
+
+# to be intergrated
+train_model_detection.py

@@ -1,0 +1,8 @@
+- lr = learning rate
+- bs = batch size
+- dl = dataloader
+- ds = dataset
+- gt = ground truth
+- pred = predicted
+- avg = average
+- pct = percent
