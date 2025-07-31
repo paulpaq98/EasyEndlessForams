@@ -2,6 +2,7 @@
 */__pycache__
 data/img/*
 data/masks/*
+data/dataset.csv
 
 # Models
 models/classification/*.pth
