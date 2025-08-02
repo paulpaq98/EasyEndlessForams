@@ -11,5 +11,10 @@ data/dataset.csv
 models/classification/*.pth
 models/detection/*.pth
 
+# Ouputs
+outputs/classification/accuray_curve/*
+outputs/classification/loss_curve/*
+
+
 # to be intergrated
 train_model_detection.py
