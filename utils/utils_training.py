@@ -9,8 +9,6 @@ def prepare_trainings(df, num_fold, data_type, batch_size, transforms_dict, num_
 
     max_fold = 1 if num_fold == 0 else num_fold
 
-    print(training_dict)
-
     for fold_number in range(max_fold):
 
         training_dict[f"Kfold_{num_fold:02d}"][f"Kfold_{fold_number:02d}"] = {}

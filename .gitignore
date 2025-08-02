@@ -12,8 +12,8 @@ models/classification/*.pth
 models/detection/*.pth
 
 # Ouputs
-outputs/classification/accuray_curve/*
-outputs/classification/loss_curve/*
+outputs/classification/accuray_curve/*.png
+outputs/classification/loss_curve/*.png
 
 
 # to be intergrated
