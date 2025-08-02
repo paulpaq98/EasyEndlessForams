@@ -1,4 +1,8 @@
 import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+from sklearn.metrics import confusion_matrix
+import os
 
 
 def plot_loss_curve(train_loss, val_loss, save_path='loss_curve.png'):
@@ -40,3 +44,41 @@ def plot_accuracy_curve(train_acc, val_acc, save_path='accuracy_curve.png'):
     plt.grid(True)
     plt.savefig(save_path)
     plt.close()
+
+
+def plot_confusion_matrix(y_true, y_pred, labels, class_names, save_path=None):
+    """
+    Plots and optionally saves a normalized confusion matrix.
+
+    Args:
+        y_true (list): True class labels.
+        y_pred (list): Predicted class labels.
+        labels (list): List of class indices (e.g., [0,1,2]).
+        class_names (list): List of class names (str), same order as `labels`.
+        save_path (str, optional): If provided, saves the figure to this path.
+    """
+    # Compute confusion matrix
+    cm = confusion_matrix(y_true, y_pred, labels=labels)
+
+    # Normalize by true class
+    cm_normalized = cm.astype('float') / cm.sum(axis=1, keepdims=True)
+    cm_normalized = np.nan_to_num(cm_normalized)  # Replace NaNs (e.g. divide by 0)
+
+    # Plot
+    plt.figure(figsize=(22, 18))
+    sns.heatmap(cm_normalized, annot=cm, fmt='d', cmap='Blues',
+                xticklabels=class_names, yticklabels=class_names,
+                cbar_kws={'label': 'Proportion'})
+
+    plt.xlabel('Predicted Labels')
+    plt.ylabel('True Labels')
+    plt.title('Confusion Matrix (Normalized by True Class)')
+    plt.tight_layout()
+
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path)
+        plt.close()
+    else:
+        plt.show()
+

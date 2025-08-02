@@ -14,7 +14,7 @@ models/detection/*.pth
 # Ouputs
 outputs/classification/accuray_curve/*.png
 outputs/classification/loss_curve/*.png
-
+outputs/classification/confusion_matrix/*.png
 
 # to be intergrated
 train_model_detection.py

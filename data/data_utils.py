@@ -2,7 +2,7 @@ import pandas as pd
 import os
 from sklearn.model_selection import StratifiedKFold
 
-def prepare_data(data_root_path, num_fold, reset_fold):
+def prepare_data(data_root_path, num_fold, reset_fold=False):
     dataset_csv_path = os.path.join(data_root_path, "dataset.csv")
 
     # Create the DataFrame if it does not already exist
