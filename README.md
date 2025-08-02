@@ -18,8 +18,8 @@ Training images and a taxonomic training module can be found at Endless Forams.
 
 To set up the environment using Conda (recommended):
 ```
-conda create -n formas python=3.10
-conda activate formas
+conda create -n forams python=3.10
+conda activate forams
 pip install -r requirements.txt
 ```
 ## Running Code

@@ -1,5 +1,8 @@
+# Basic
 */**/__pycache__
 */__pycache__
+
+# Data
 data/img/*
 data/masks/*
 data/dataset.csv

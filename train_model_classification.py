@@ -66,56 +66,62 @@ def main(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Device : ",device)
 
-    training_dict = prepare_trainings(df_split, args.num_fold, args.data_type, args.batch_size, get_transforms(args.data_type), args.num_workers)
+    trainings_dict = prepare_trainings(df_split, args.num_fold, args.data_type, args.batch_size, get_transforms(args.data_type), args.num_workers)
 
-    #print("training_dict :",training_dict)
+    #print("training_dict :",trainings_dict)
 
-    for training_name in training_dict.keys():
+    for training_dict in trainings_dict.keys():
 
-        print(f"#### Launching training {training_name} ####")
+        print(f"#### Launching training {training_dict} ####")
+        Kfold_dict = trainings_dict[training_dict]
 
-        # Prepare model
-        model = prepare_model(args.name_model,  training_dict[training_name]['num_classes'], device)
+        for training_fold in Kfold_dict.keys():
 
-        # set optimizer
-        optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
-        
-        #getting dict
-        train_dict = training_dict[training_name]
+            print(f"###### training fold {training_fold} ##")
+            
 
-        ## TRAINNING
-        train_loss, val_loss, train_acc, val_acc = train_model(
-            model, 
-            train_dict["train_loader"], 
-            train_dict["val_loader"], 
-            train_dict["criterion"], 
-            optimizer, 
-            args.num_epochs, 
-            early_stopping=args.early_stopping,
-            patience=args.patience,
-            load_weights_path=args.path_pretrain,
-            data_type = args.data_type,
-            model_name = args.name_model,
-            num_fold = args.num_fold,
-            fold_id = train_dict["fold_id"],
-            device=device)
-        
-        root_output = "outputs"
+            # Prepare model
+            model = prepare_model(args.name_model,  Kfold_dict[training_fold]['num_classes'], device)
 
-        if args.num_fold !=0:
+            # set optimizer
+            optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
+            
+            #getting dict
+            train_dict = Kfold_dict[training_fold]
 
-            save_path_loss_curve = root_output + "\\" + "classification\\loss_curve\\loss_curve_fold_"+str(train_dict["fold_id"])+"_total_fold_"+str(args.num_fold)+"_"+args.data_type+"_"+args.name_model+".png"
-            save_path_accuracy_curve = root_output + "\\" + "classification\\accuracy_curve\\accuracy_curve_fold_"+str(train_dict["fold_id"])+"_total_fold_"+str(args.num_fold)+"_"+args.data_type+"_"+args.name_model+".png"
-        
-        else:
+            ## TRAINNING
+            train_loss, val_loss, train_acc, val_acc = train_model(
+                model, 
+                train_dict["train_loader"], 
+                train_dict["val_loader"], 
+                train_dict["criterion"], 
+                optimizer, 
+                args.num_epochs, 
+                early_stopping=args.early_stopping,
+                patience=args.patience,
+                load_weights_path=args.path_pretrain,
+                data_type = args.data_type,
+                model_name = args.name_model,
+                num_fold = args.num_fold,
+                fold_id = train_dict["fold_id"],
+                device=device)
+            
+            root_output = "outputs"
 
-            save_path_loss_curve = root_output + "\\" + "classification\\loss_curve\\loss_curve_"+args.data_type+"_"+args.name_model+".png"
-            save_path_accuracy_curve = root_output + "\\" + "classification\\accuracy_curve\\accuracy_curve_"+args.data_type+"_"+args.name_model+".png"
+            if args.num_fold !=0:
 
-        plot_loss_curve(train_loss, val_loss, save_path=save_path_loss_curve)
-        plot_accuracy_curve(train_acc, val_acc, save_path=save_path_accuracy_curve)
+                save_path_loss_curve = root_output + "\\" + "classification\\loss_curve\\loss_curve_fold_"+str(train_dict["fold_id"])+"_total_fold_"+str(args.num_fold)+"_"+args.data_type+"_"+args.name_model+".png"
+                save_path_accuracy_curve = root_output + "\\" + "classification\\accuracy_curve\\accuracy_curve_fold_"+str(train_dict["fold_id"])+"_total_fold_"+str(args.num_fold)+"_"+args.data_type+"_"+args.name_model+".png"
+            
+            else:
 
-        clear_cache()
+                save_path_loss_curve = root_output + "\\" + "classification\\loss_curve\\loss_curve_"+args.data_type+"_"+args.name_model+".png"
+                save_path_accuracy_curve = root_output + "\\" + "classification\\accuracy_curve\\accuracy_curve_"+args.data_type+"_"+args.name_model+".png"
+
+            plot_loss_curve(train_loss, val_loss, save_path=save_path_loss_curve)
+            plot_accuracy_curve(train_acc, val_acc, save_path=save_path_accuracy_curve)
+
+            clear_cache()
 
 
 if __name__ == '__main__':
