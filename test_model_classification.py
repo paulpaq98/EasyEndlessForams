@@ -97,7 +97,7 @@ def main(args):
 
     evaluation_dict = prepare_trainings(df_split, num_fold, data_type, args.batch_size, get_transforms(data_type), args.num_workers)
 
-    #print("evaluation_dict :",evaluation_dict)
+    print("evaluation_dict :",evaluation_dict)
 
     for training_dict in evaluation_dict.keys():
         print(f"#### Testing configuration {training_dict} ####")
@@ -107,7 +107,7 @@ def main(args):
             fold_data = Kfold_dict[evaluation_fold]
             temp_fold_id = fold_data["fold_id"]
 
-            if temp_fold_id == num_fold-1: # Evaluation only on the untrained part of the K-fold # Might be updated to allow testing on the trained part for model exploration
+            if temp_fold_id == num_fold-1 or num_fold == 0 : # Evaluation only on the untrained part of the K-fold # Might be updated to allow testing on the trained part for model exploration
 
                 print(f"###### Evaluating on fold {evaluation_fold} ######")
 
