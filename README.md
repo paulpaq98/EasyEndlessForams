@@ -39,7 +39,7 @@ python .\train_model_classification.py
 
 A model will be saved in the models\classification folder. 
 
-The naming convention for the models is as follow : "
+The naming convention for the models is as follow : 
 ```
 LossType_DataType_Model_Name.pth
 ```
@@ -50,10 +50,10 @@ LossType_DataType_Model_Name.pth
 
 in this example the name of the model will be : ce_raw_effNet_small.pth
 
-##### Run example minimalistic training for an efficientNetV2
+##### Run example minimalistic testing 
 
 ```
-python .\train_model_classification.py 
+python .\test_model_classification.py --path_pretrain models\classification\ce_raw_effNet_small.pth
 ```
 
 
