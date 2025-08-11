@@ -3,7 +3,12 @@ import seaborn as sns
 import numpy as np
 from sklearn.metrics import confusion_matrix
 import os
+import torchvision.utils as vutils
+import numpy as np
 
+# # ================================================
+# # Classification outputs
+# # ================================================
 
 def plot_loss_curve(train_loss, val_loss, save_path='loss_curve.png'):
     """
@@ -40,6 +45,26 @@ def plot_accuracy_curve(train_acc, val_acc, save_path='accuracy_curve.png'):
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
     plt.title('Accuracy over Epochs')
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(save_path)
+    plt.close()
+
+def plot_f1_score_curve(train_f1, val_f1, save_path='f1_score_curve.png'):
+    """
+    Affiche et sauvegarde la courbe du F1-score pour l'entraînement et la validation.
+
+    Args:
+        train_f1 (list): Liste des F1-scores d'entraînement par époque.
+        val_f1 (list): Liste des F1-scores de validation par époque.
+        save_path (str): Chemin de sauvegarde de l'image.
+    """
+    plt.figure(figsize=(10, 5))
+    plt.plot(train_f1, label='Train F1-score')
+    plt.plot(val_f1, label='Validation F1-score')
+    plt.xlabel('Epoch')
+    plt.ylabel('F1-score (macro)')
+    plt.title('F1-score over Epochs')
     plt.legend()
     plt.grid(True)
     plt.savefig(save_path)
@@ -82,3 +107,42 @@ def plot_confusion_matrix(y_true, y_pred, labels, class_names, save_path=None):
     else:
         plt.show()
 
+# # ================================================
+# # GAN outputs
+# # ================================================
+
+def save_image_grid(images, save_path=None, nrow=8, normalize=True, title=None):
+    """
+    Save or display a grid of images (typically GAN outputs).
+
+    Args:
+        images (Tensor): Tensor of shape (B, C, H, W).
+        save_path (str): Path to save the image (e.g., 'output/epoch_001.png').
+        nrow (int): Number of images per row.
+        normalize (bool): Normalize images to [0, 1] before display.
+        title (str): Optional title for the plot.
+
+    Returns:
+        None
+    """
+    # Ensure directory exists
+    if save_path is not None:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+
+    # Create grid
+    grid = vutils.make_grid(images, nrow=nrow, normalize=normalize, pad_value=1)
+
+    # Convert to numpy for display
+    np_grid = grid.cpu().numpy().transpose((1, 2, 0))
+
+    plt.figure(figsize=(8, 8))
+    plt.axis("off")
+    if title:
+        plt.title(title)
+    plt.imshow(np_grid)
+
+    if save_path:
+        plt.savefig(save_path, bbox_inches='tight', pad_inches=0.1)
+        plt.close()
+    else:
+        plt.show()

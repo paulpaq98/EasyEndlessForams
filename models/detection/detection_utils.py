@@ -1,5 +1,4 @@
-
-
+import cv2
 
 def retreive_masks(image_path, model,imgsz, input_point, input_label ):
     device = "cpu"
@@ -17,8 +16,6 @@ def retreive_masks(image_path, model,imgsz, input_point, input_label ):
         masks = None
 
     return masks
-
-
 
 def process_and_save_mask(image_path, model, input_root="data_total", output_root="data_total_masks"):
 

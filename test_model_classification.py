@@ -12,8 +12,8 @@ import torch
 from torch.utils.data import DataLoader
 
 from data.data_utils import prepare_data
-from models.classification.classification_utils import get_transforms, prepare_model
-from utils.utils_training import prepare_trainings
+from models.classification.classification_utils import prepare_model
+from utils.utils_training import prepare_trainings, get_transforms
 from outputs.metrics_utils import evaluate_model
 from outputs.outputs_utils import plot_confusion_matrix
 
@@ -25,7 +25,7 @@ def summarize_args(args):
     print(f"Data root path      : {args.data_root_path}")
 
     print("\n# MODEL PARAMETERS")
-    print(f"loading path     : {args.path_loading}")
+    print(f"path pretrain    : {args.path_pretrain}")
 
     print("\n# TEST PARAMETERS")
     print(f"Batch size          : {args.batch_size}")
@@ -33,22 +33,23 @@ def summarize_args(args):
 
     print("===========================================\n")
 
-def summarize_model_path(path_loading):
+def summarize_model_path(path_pretrain):
     """
     Extracts and prints model properties from the model filename.
 
     Args:
-        path_loading (str): Path to the model file (e.g., "outputs/best_fold_0_total_fold_5_raw_effNet_small.pth")
+        path_pretrain (str): Path to the model file (e.g., "outputs/best_fold_0_total_fold_5_raw_effNet_small.pth")
     """
-    if path_loading is None:
-        raise ValueError("You must provide a model path using --path_loading")
+    if path_pretrain is None:
+        raise ValueError("You must provide a model path using --path_pretrain")
 
-    filename = os.path.basename(path_loading).split(".")[0]  # Remove .pth
+    filename = os.path.basename(path_pretrain).split(".")[0]  # Remove .pth
     parts = filename.split("_")
 
     if "fold" in filename and "total" in filename:
-        # Format: best_fold_XX_total_fold_XX_DATA_NAME.pth
+        # Format: Loss_fold_XX_total_fold_XX_DATA_NAME.pth
         try:
+            loss_type = parts[0]
             fold_id = int(parts[2])
             num_fold = int(parts[5])
             data_type = parts[-3]
@@ -56,8 +57,9 @@ def summarize_model_path(path_loading):
         except (IndexError, ValueError):
             raise ValueError("Failed to parse K-Fold model filename: check format.")
     else:
-        # Format: best_DATA_NAME.pth
+        # Format: Loss_DATA_NAME.pth
         try:
+            loss_type = parts[0]
             fold_id = 0
             num_fold = 0
             data_type = parts[-3]
@@ -66,21 +68,22 @@ def summarize_model_path(path_loading):
             raise ValueError("Failed to parse standard model filename: check format.")
 
     print("\n========== Model Parameters Summary ==========")
-    print(f"Model path      : {path_loading}")
+    print(f"Model path      : {path_pretrain}")
     print(f"Model name      : {name_model}")
     print(f"Data type       : {data_type}")
     print(f"Fold ID         : {fold_id}")
     print(f"Total folds     : {num_fold}")
+    print(f"Loss Type       : {loss_type}")
     print("===================================\n")
 
-    return name_model, data_type, fold_id, num_fold
+    return name_model, data_type, fold_id, num_fold, loss_type
 
 def clear_cache():
     torch.cuda.empty_cache()
 
 def main(args):
 
-    name_model, data_type, fold_id, num_fold = summarize_model_path(args.path_loading)
+    name_model, data_type, fold_id, num_fold, loss_type = summarize_model_path(args.path_pretrain)
 
     try:
         assert num_fold != 1
@@ -95,9 +98,9 @@ def main(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Device :", device)
 
-    evaluation_dict = prepare_trainings(df_split, num_fold, data_type, args.batch_size, get_transforms(data_type), args.num_workers)
+    evaluation_dict = prepare_trainings(df_split, num_fold, data_type, args.batch_size, get_transforms(data_type), args.num_workers, "ce")
 
-    print("evaluation_dict :",evaluation_dict)
+    #print("evaluation_dict :",evaluation_dict)
 
     for training_dict in evaluation_dict.keys():
         print(f"#### Testing configuration {training_dict} ####")
@@ -115,8 +118,7 @@ def main(args):
                 class_names = fold_data['class_names']
                 val_loader = fold_data['val_loader']
 
-                model = prepare_model(name_model, num_classes, device)
-                model.load_state_dict(torch.load(args.path_loading, map_location=device))
+                model = prepare_model(name_model, num_classes, device, pretrained_path=args.path_pretrain)
                 model.eval()
 
                 print("## Evaluating model on validation set ##")
@@ -127,9 +129,9 @@ def main(args):
                 # Save confusion matrix
                 root_output = "outputs"
                 if num_fold != 0:
-                    cm_path = os.path.join(root_output, "classification", "confusion_matrix", f"cm_fold_{temp_fold_id}_total_fold_{num_fold}_{data_type}_{name_model}.png")
+                    cm_path = os.path.join(root_output, "classification", "confusion_matrix", f"cm_{loss_type}_fold_{temp_fold_id}_total_fold_{num_fold}_{data_type}_{name_model}.png")
                 else:
-                    cm_path = os.path.join(root_output, "classification", "confusion_matrix", f"cm_{data_type}_{name_model}.png")
+                    cm_path = os.path.join(root_output, "classification", "confusion_matrix", f"cm_{loss_type}_{data_type}_{name_model}.png")
 
                 plot_confusion_matrix(y_true, y_pred, labels=labels, class_names=class_names, save_path=cm_path)
 
@@ -142,7 +144,7 @@ if __name__ == '__main__':
     parser.add_argument("--data_root_path", type=str, default=".\\data", help="Path to the root folder containing the path to the data")
 
     # MODEL PARAMETERS ############################################
-    parser.add_argument("--path_loading", type=str, required=True, help="Path to load model weights (.pt or .pth)")
+    parser.add_argument("--path_pretrain", type=str, required=True, help="Path to load model weights (.pt or .pth)")
 
     # TEST PARAMETERS #############################################
     parser.add_argument("--batch_size", type=int, default=4, help="Batch size for testing")

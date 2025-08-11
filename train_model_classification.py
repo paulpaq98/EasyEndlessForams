@@ -7,7 +7,6 @@
 # # Imports
 # # ================================================
 
-import os
 from argparse import ArgumentParser
 
 import torch
@@ -15,15 +14,19 @@ import torch.optim as optim
 
 from data.data_utils import prepare_data
 
-from models.classification.classification_utils import get_transforms, prepare_model, train_model
-from outputs.outputs_utils import plot_accuracy_curve, plot_loss_curve
-from utils.utils_training import prepare_trainings
+from models.classification.classification_utils import prepare_model, train_model
+from outputs.outputs_utils import plot_accuracy_curve, plot_loss_curve, plot_f1_score_curve
+from utils.utils_training import prepare_trainings, get_transforms
 
 
 # # ================================================
 
 def summarize_args(args):
+
     print("\n========== Configuration Summary ==========")
+
+    print(f"debug mode          : {args.debug}")
+    print("===========================================\n")
 
     print("\n# DATA PARAMETERS")
     print(f"Data root path      : {args.data_root_path}")
@@ -42,6 +45,7 @@ def summarize_args(args):
     print(f"Number of workers   : {args.num_workers}")
     print(f"early stopping      : {args.early_stopping}")
     print(f"patience            : {args.patience}")
+    print(f"loss type           : {args.loss_type}")
 
     print("===========================================\n")
 
@@ -59,14 +63,14 @@ def main(args):
     # def fonction to print a clean resume of the args
     print("## Preparing Dataset ##")
 
-    df_split = prepare_data(args.data_root_path, args.num_fold, args.reset_fold)
+    df_split = prepare_data(args.data_root_path, args.num_fold, args.reset_fold, args.debug)
 
     print("## Preparing Trainings ##")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Device : ",device)
 
-    trainings_dict = prepare_trainings(df_split, args.num_fold, args.data_type, args.batch_size, get_transforms(args.data_type), args.num_workers)
+    trainings_dict = prepare_trainings(df_split, args.num_fold, args.data_type, args.batch_size, get_transforms(args.data_type), args.num_workers, args.loss_type)
 
     #print("training_dict :",trainings_dict)
 
@@ -78,10 +82,9 @@ def main(args):
         for training_fold in Kfold_dict.keys():
 
             print(f"###### training fold {training_fold} ##")
-            
 
             # Prepare model
-            model = prepare_model(args.name_model,  Kfold_dict[training_fold]['num_classes'], device)
+            model = prepare_model(args.name_model,  Kfold_dict[training_fold]['num_classes'], device, pretrained_path=args.path_pretrain)
 
             # set optimizer
             optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
@@ -89,17 +92,17 @@ def main(args):
             #getting dict
             train_dict = Kfold_dict[training_fold]
 
-            ## TRAINNING
-            train_loss, val_loss, train_acc, val_acc = train_model(
+            ## TRAINNING train_loss_history, val_loss_history, train_acc_history, val_acc_history, train_f1_history, val_f1_history
+            train_loss, val_loss, train_acc, val_acc, train_f1, val_f1 = train_model(
                 model, 
                 train_dict["train_loader"], 
                 train_dict["val_loader"], 
-                train_dict["criterion"], 
+                train_dict["criterion"],
+                train_dict["loss_type"],  
                 optimizer, 
                 args.num_epochs, 
                 early_stopping=args.early_stopping,
                 patience=args.patience,
-                load_weights_path=args.path_pretrain,
                 data_type = args.data_type,
                 model_name = args.name_model,
                 num_fold = args.num_fold,
@@ -110,16 +113,21 @@ def main(args):
 
             if args.num_fold !=0:
 
-                save_path_loss_curve = root_output + "\\" + "classification\\loss_curve\\loss_curve_fold_"+str(train_dict["fold_id"])+"_total_fold_"+str(args.num_fold)+"_"+args.data_type+"_"+args.name_model+".png"
-                save_path_accuracy_curve = root_output + "\\" + "classification\\accuracy_curve\\accuracy_curve_fold_"+str(train_dict["fold_id"])+"_total_fold_"+str(args.num_fold)+"_"+args.data_type+"_"+args.name_model+".png"
-            
+                save_path_loss_curve = root_output + "\\" + "classification\\loss_curve\\loss_curve"+str(train_dict["loss_type"])+"_fold_"+str(train_dict["fold_id"])+"_total_fold_"+str(args.num_fold)+"_"+args.data_type+"_"+args.name_model+".png"
+                save_path_accuracy_curve = root_output + "\\" + "classification\\accuracy_curve\\accuracy_curve"+str(train_dict["loss_type"])+"_fold_"+str(train_dict["fold_id"])+"_total_fold_"+str(args.num_fold)+"_"+args.data_type+"_"+args.name_model+".png"
+                save_path_f1_curve = root_output + "\\" + "classification\\f1_curve\\f1_curve"+str(train_dict["loss_type"])+"_fold_"+str(train_dict["fold_id"])+"_total_fold_"+str(args.num_fold)+"_"+args.data_type+"_"+args.name_model+".png"
+
+
             else:
 
-                save_path_loss_curve = root_output + "\\" + "classification\\loss_curve\\loss_curve_"+args.data_type+"_"+args.name_model+".png"
-                save_path_accuracy_curve = root_output + "\\" + "classification\\accuracy_curve\\accuracy_curve_"+args.data_type+"_"+args.name_model+".png"
+                save_path_loss_curve = root_output + "\\" + "classification\\loss_curve\\loss_curve_"+str(train_dict["loss_type"])+"_"+args.data_type+"_"+args.name_model+".png"
+                save_path_accuracy_curve = root_output + "\\" + "classification\\accuracy_curve\\accuracy_curve_"+str(train_dict["loss_type"])+"_"+args.data_type+"_"+args.name_model+".png"
+                save_path_f1_curve = root_output + "\\" + "classification\\f1_curve\\f1_curve_"+str(train_dict["loss_type"])+"_"+args.data_type+"_"+args.name_model+".png"
+
 
             plot_loss_curve(train_loss, val_loss, save_path=save_path_loss_curve)
             plot_accuracy_curve(train_acc, val_acc, save_path=save_path_accuracy_curve)
+            plot_f1_score_curve(train_f1, val_f1, save_path=save_path_f1_curve)
 
             clear_cache()
 
@@ -141,7 +149,8 @@ if __name__ == '__main__':
 
     parser.add_argument("--name_model", help="name of the model being trained", type=str, default="effNet_small") # effNet_medium # effNet_large
 
-    parser.add_argument("--path_pretrain", help="relative path to an already trained model for finetuning", type=str, default=None)
+    parser.add_argument("--path_pretrain", 
+                        help="relative path to an already trained model for finetuning - use 'default' to load the pretrained torch default weights ", type=str, default=None)
 
 
     # TRAIN PARAMETERS #############################################
@@ -154,16 +163,23 @@ if __name__ == '__main__':
 
     parser.add_argument("--num_workers", help="maximum number of workers for loading with the cpu", type=int, default=0)
 
-    parser.add_argument("--early_stopping", help="activate the early stopping of the trainning phase", type=bool, default=False)
+    parser.add_argument("--early_stopping", help="activate the early stopping of the trainning phase", type=bool, default=False, choices=[True])
 
     parser.add_argument("--patience", help="number of epochs before the early stopping is activated", type=int, default=5)
 
+    parser.add_argument("--loss_type", type=str, default="ce", choices=["ce", "cb", "focal", "cbfocal", "smoothing"],
+                    help="Type of loss function to use: ce | cb | focal | cbfocal |smoothing")
 
     ########################################################################
 
+    parser.add_argument("--debug", type=bool, default=False, choices=[True],
+                help="Activate debug mode ")   
+    
     args = parser.parse_args()
 
     summarize_args(args)
 
     main(args)
 
+
+# python .\train_model_classification.py --name_model effNet_small --debug True --num_epoch 2 --loss_type cbfocal --num_workers 2 --early_stopping True --batch_size 8

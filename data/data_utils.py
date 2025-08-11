@@ -1,8 +1,10 @@
 import pandas as pd
 import os
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, train_test_split
+from collections import Counter
+from tqdm import tqdm
 
-def prepare_data(data_root_path, num_fold, reset_fold=False):
+def prepare_data(data_root_path, num_fold, reset_fold=False, debug=False):
     dataset_csv_path = os.path.join(data_root_path, "dataset.csv")
 
     # Create the DataFrame if it does not already exist
@@ -35,7 +37,6 @@ def prepare_data(data_root_path, num_fold, reset_fold=False):
         # Backup
         df.to_csv(dataset_csv_path, sep=";", index=False)
 
-
     # Add stratified Kfold columns if num_fold > 0
     if num_fold > 1:
         kfold_column = f"Kfold_{num_fold:02d}"
@@ -47,4 +48,36 @@ def prepare_data(data_root_path, num_fold, reset_fold=False):
 
             df.to_csv(dataset_csv_path, sep=";", index=False)
 
+    # Add debug mode column
+    if debug == True: # and "debug" and not in df.columns:
+        prct = 3
+        print(f"⚙️  Debug mode activated: generating {prct}% debug subset with stratified sampling...")
+        df["debug"] = 0
+
+        debug_df = []
+        for split_val in [0, 1]:  # 0 = val, 1 = train
+            split_df = df[df["split"] == split_val]
+            grouped = split_df.groupby("class")
+
+            debug_subset = []
+            for class_label, group in grouped:
+                n = len(group)
+                keep_n = max(1, int((prct/100) * n))  # keep at least one per class
+                sampled = group.sample(n=keep_n, random_state=42)
+                debug_subset.append(sampled)
+
+            debug_subset_df = pd.concat(debug_subset)
+            df.loc[debug_subset_df.index, "debug"] = 1
+        
+        df = df[df["debug"] == 1]
+
+        print(f"✅ Debug subset created with {df['debug'].sum()} images.")
+
     return df
+
+def get_class_counts(dataset, num_classes):
+    labels = [label for _, label in dataset]
+    counts = [0] * num_classes
+    for label in labels:
+        counts[label] += 1
+    return counts

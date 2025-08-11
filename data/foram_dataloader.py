@@ -4,9 +4,6 @@ from torch.utils.data import Dataset
 
 class ForamDataset(Dataset):
     def __init__(self, df, split="train", transform_img=None, transform_mask=None, data_type = "raw", fold_id=0, num_fold=0):
-        #print("fold_id           :",fold_id)
-        #print("num_fold          :",num_fold)
-
         self.data = df
 
         # Build class-to-index map
@@ -14,11 +11,8 @@ class ForamDataset(Dataset):
         self.class_to_idx = {cls_name: idx for idx, cls_name in enumerate(classes)}
         self.idx_to_class = {v: k for k, v in self.class_to_idx.items()}
 
-        #print("self.class_to_idx : ",self.class_to_idx)
-        #print("self.idx_to_class : ",self.idx_to_class)
-
-
         kfold_column = f"Kfold_{num_fold:02d}" if num_fold !=0 else "split"
+
         if split == "train":
             self.data = self.data[self.data[kfold_column] != fold_id]
         elif split == "val":
